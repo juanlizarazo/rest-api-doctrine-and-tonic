@@ -1,5 +1,6 @@
 {
     "require": {
-        "peej/tonic": "3.*"
+        "peej/tonic": "3.*",
+        "doctrine/orm": "*"
     }
 }
