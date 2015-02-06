@@ -1,8 +1,29 @@
-# rest-api-doctrine-and-tonic
-An example of a rest service relying on tonic to handle the requests an doctrine as the object relational mapper to mysql.
+
+## Setup 
+When you have a LAMP stack ready:
+
+1. Clone the repository
+2. Install all the project dependencies with composer: doctrine, tonic, doctrine migrations...
+  
+  ```sh
+  $ php composer.phar install 
+  ```
+3. Create the database from your **mysql** terminal or any db visual tool like Workbench.
+
+  ```sql
+  mysql> create database tonic_service;
+  ```
+
+4. Go to the **db** folder and run the migrations: 
+  ```
+  $ cd db
+  $ php migrations.php migrations:migrate
+  ```
+5. 
+**Unfinished**...
+
 
 ## The MIT License (MIT)
-
 Copyright (c) 2015 Juan Lizarazo
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
