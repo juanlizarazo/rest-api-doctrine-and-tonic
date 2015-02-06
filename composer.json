@@ -4,6 +4,7 @@
         "doctrine/orm": "*",
         "doctrine/migrations": "1.0.*@dev",
         "symfony/console": "2.1.2",
-        "symfony/yaml": "2.1.2"
+        "symfony/yaml": "2.1.2",
+        "phpunit/phpunit": "4.5.*"
     }
 }
