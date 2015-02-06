@@ -35,17 +35,15 @@ class CommandTest extends \PHPUnit_Framework_TestCase
 
     public function testConstructor()
     {
+        try {
+            $command = new Command();
+            $this->fail('__construct() throws a \LogicException if the name is null');
+        } catch (\Exception $e) {
+            $this->assertInstanceOf('\LogicException', $e, '__construct() throws a \LogicException if the name is null');
+            $this->assertEquals('The command name cannot be empty.', $e->getMessage(), '__construct() throws a \LogicException if the name is null');
+        }
         $command = new Command('foo:bar');
         $this->assertEquals('foo:bar', $command->getName(), '__construct() takes the command name as its first argument');
-    }
-
-    /**
-     * @expectedException        \LogicException
-     * @expectedExceptionMessage The command defined in "Symfony\Component\Console\Command\Command" cannot have an empty name.
-     */
-    public function testCommandNameCannotBeEmpty()
-    {
-        new Command();
     }
 
     public function testSetApplication()
@@ -94,25 +92,22 @@ class CommandTest extends \PHPUnit_Framework_TestCase
         $ret = $command->setName('foobar:bar');
         $this->assertEquals($command, $ret, '->setName() implements a fluent interface');
         $this->assertEquals('foobar:bar', $command->getName(), '->setName() sets the command name');
-    }
 
-    /**
-     * @dataProvider provideInvalidCommandNames
-     */
-    public function testInvalidCommandNames($name)
-    {
-        $this->setExpectedException('InvalidArgumentException', sprintf('Command name "%s" is invalid.', $name));
+        try {
+            $command->setName('');
+            $this->fail('->setName() throws an \InvalidArgumentException if the name is empty');
+        } catch (\Exception $e) {
+            $this->assertInstanceOf('\InvalidArgumentException', $e, '->setName() throws an \InvalidArgumentException if the name is empty');
+            $this->assertEquals('Command name "" is invalid.', $e->getMessage(), '->setName() throws an \InvalidArgumentException if the name is empty');
+        }
 
-        $command = new \TestCommand();
-        $command->setName($name);
-    }
-
-    public function provideInvalidCommandNames()
-    {
-        return array(
-            array(''),
-            array('foo:'),
-        );
+        try {
+            $command->setName('foo:');
+            $this->fail('->setName() throws an \InvalidArgumentException if the name is empty');
+        } catch (\Exception $e) {
+            $this->assertInstanceOf('\InvalidArgumentException', $e, '->setName() throws an \InvalidArgumentException if the name is empty');
+            $this->assertEquals('Command name "foo:" is invalid.', $e->getMessage(), '->setName() throws an \InvalidArgumentException if the name is empty');
+        }
     }
 
     public function testGetSetDescription()
@@ -198,87 +193,32 @@ class CommandTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(3, $command->getDefinition()->getArgumentCount(), '->mergeApplicationDefinition() does not try to merge twice the application arguments and options');
     }
 
-    public function testMergeApplicationDefinitionWithoutArgsThenWithArgsAddsArgs()
-    {
-        $application1 = new Application();
-        $application1->getDefinition()->addArguments(array(new InputArgument('foo')));
-        $application1->getDefinition()->addOptions(array(new InputOption('bar')));
-        $command = new \TestCommand();
-        $command->setApplication($application1);
-        $command->setDefinition($definition = new InputDefinition(array()));
-
-        $r = new \ReflectionObject($command);
-        $m = $r->getMethod('mergeApplicationDefinition');
-        $m->setAccessible(true);
-        $m->invoke($command, false);
-        $this->assertTrue($command->getDefinition()->hasOption('bar'), '->mergeApplicationDefinition(false) merges the application and the command options');
-        $this->assertFalse($command->getDefinition()->hasArgument('foo'), '->mergeApplicationDefinition(false) does not merge the application arguments');
-
-        $m->invoke($command, true);
-        $this->assertTrue($command->getDefinition()->hasArgument('foo'), '->mergeApplicationDefinition(true) merges the application arguments and the command arguments');
-
-        $m->invoke($command);
-        $this->assertEquals(2, $command->getDefinition()->getArgumentCount(), '->mergeApplicationDefinition() does not try to merge twice the application arguments');
-    }
-
-    public function testRunInteractive()
-    {
-        $tester = new CommandTester(new \TestCommand());
-
-        $tester->execute(array(), array('interactive' => true));
-
-        $this->assertEquals('interact called'.PHP_EOL.'execute called'.PHP_EOL, $tester->getDisplay(), '->run() calls the interact() method if the input is interactive');
-    }
-
-    public function testRunNonInteractive()
-    {
-        $tester = new CommandTester(new \TestCommand());
-
-        $tester->execute(array(), array('interactive' => false));
-
-        $this->assertEquals('execute called'.PHP_EOL, $tester->getDisplay(), '->run() does not call the interact() method if the input is not interactive');
-    }
-
-    /**
-     * @expectedException        \LogicException
-     * @expectedExceptionMessage You must override the execute() method in the concrete command class.
-     */
-    public function testExecuteMethodNeedsToBeOverridden()
-    {
-        $command = new Command('foo');
-        $command->run(new StringInput(''), new NullOutput());
-    }
-
-    /**
-     * @expectedException        \InvalidArgumentException
-     * @expectedExceptionMessage The "--bar" option does not exist.
-     */
-    public function testRunWithInvalidOption()
+    public function testRun()
     {
         $command = new \TestCommand();
         $tester = new CommandTester($command);
-        $tester->execute(array('--bar' => true));
-    }
+        try {
+            $tester->execute(array('--bar' => true));
+            $this->fail('->run() throws a \InvalidArgumentException when the input does not validate the current InputDefinition');
+        } catch (\Exception $e) {
+            $this->assertInstanceOf('\InvalidArgumentException', $e, '->run() throws a \InvalidArgumentException when the input does not validate the current InputDefinition');
+            $this->assertEquals('The "--bar" option does not exist.', $e->getMessage(), '->run() throws a \InvalidArgumentException when the input does not validate the current InputDefinition');
+        }
 
-    public function testRunReturnsIntegerExitCode()
-    {
-        $command = new \TestCommand();
-        $exitCode = $command->run(new StringInput(''), new NullOutput());
-        $this->assertSame(0, $exitCode, '->run() returns integer exit code (treats null as 0)');
+        $tester->execute(array(), array('interactive' => true));
+        $this->assertEquals('interact called'.PHP_EOL.'execute called'.PHP_EOL, $tester->getDisplay(), '->run() calls the interact() method if the input is interactive');
 
-        $command = $this->getMock('TestCommand', array('execute'));
-        $command->expects($this->once())
-             ->method('execute')
-             ->will($this->returnValue('2.3'));
-        $exitCode = $command->run(new StringInput(''), new NullOutput());
-        $this->assertSame(2, $exitCode, '->run() returns integer exit code (casts numeric to int)');
-    }
+        $tester->execute(array(), array('interactive' => false));
+        $this->assertEquals('execute called'.PHP_EOL, $tester->getDisplay(), '->run() does not call the interact() method if the input is not interactive');
 
-    public function testRunReturnsAlwaysInteger()
-    {
-        $command = new \TestCommand();
-
-        $this->assertSame(0, $command->run(new StringInput(''), new NullOutput()));
+        $command = new Command('foo');
+        try {
+            $command->run(new StringInput(''), new NullOutput());
+            $this->fail('->run() throws a \LogicException if the execute() method has not been overridden and no code has been provided');
+        } catch (\Exception $e) {
+            $this->assertInstanceOf('\LogicException', $e, '->run() throws a \LogicException if the execute() method has not been overridden and no code has been provided');
+            $this->assertEquals('You must override the execute() method in the concrete command class.', $e->getMessage(), '->run() throws a \LogicException if the execute() method has not been overridden and no code has been provided');
+        }
     }
 
     public function testSetCode()
@@ -293,35 +233,8 @@ class CommandTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('interact called'.PHP_EOL.'from the code...'.PHP_EOL, $tester->getDisplay());
     }
 
-    public function testSetCodeWithNonClosureCallable()
+    public function testAsText()
     {
-        $command = new \TestCommand();
-        $ret = $command->setCode(array($this, 'callableMethodCommand'));
-        $this->assertEquals($command, $ret, '->setCode() implements a fluent interface');
-        $tester = new CommandTester($command);
-        $tester->execute(array());
-        $this->assertEquals('interact called'.PHP_EOL.'from the code...'.PHP_EOL, $tester->getDisplay());
-    }
-
-    /**
-     * @expectedException        \InvalidArgumentException
-     * @expectedExceptionMessage Invalid callable provided to Command::setCode.
-     */
-    public function testSetCodeWithNonCallable()
-    {
-        $command = new \TestCommand();
-        $command->setCode(array($this, 'nonExistentMethod'));
-    }
-
-    public function callableMethodCommand(InputInterface $input, OutputInterface $output)
-    {
-        $output->writeln('from the code...');
-    }
-
-    public function testLegacyAsText()
-    {
-        $this->iniSet('error_reporting', -1 & ~E_USER_DEPRECATED);
-
         $command = new \TestCommand();
         $command->setApplication(new Application());
         $tester = new CommandTester($command);
@@ -329,10 +242,8 @@ class CommandTest extends \PHPUnit_Framework_TestCase
         $this->assertStringEqualsFile(self::$fixturesPath.'/command_astext.txt', $command->asText(), '->asText() returns a text representation of the command');
     }
 
-    public function testLegacyAsXml()
+    public function testAsXml()
     {
-        $this->iniSet('error_reporting', -1 & ~E_USER_DEPRECATED);
-
         $command = new \TestCommand();
         $command->setApplication(new Application());
         $tester = new CommandTester($command);

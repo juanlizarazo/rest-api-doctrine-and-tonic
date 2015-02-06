@@ -11,10 +11,6 @@
 
 namespace Symfony\Component\Console\Input;
 
-use Symfony\Component\Console\Descriptor\TextDescriptor;
-use Symfony\Component\Console\Descriptor\XmlDescriptor;
-use Symfony\Component\Console\Output\BufferedOutput;
-
 /**
  * A InputDefinition represents a set of valid command line arguments and options.
  *
@@ -76,15 +72,15 @@ class InputDefinition
     /**
      * Sets the InputArgument objects.
      *
-     * @param InputArgument[] $arguments An array of InputArgument objects
+     * @param array $arguments An array of InputArgument objects
      *
      * @api
      */
     public function setArguments($arguments = array())
     {
-        $this->arguments = array();
-        $this->requiredCount = 0;
-        $this->hasOptional = false;
+        $this->arguments          = array();
+        $this->requiredCount      = 0;
+        $this->hasOptional        = false;
         $this->hasAnArrayArgument = false;
         $this->addArguments($arguments);
     }
@@ -144,7 +140,7 @@ class InputDefinition
     /**
      * Returns an InputArgument by name or by position.
      *
-     * @param string|int $name The InputArgument name or position
+     * @param string|integer $name The InputArgument name or position
      *
      * @return InputArgument An InputArgument object
      *
@@ -154,11 +150,11 @@ class InputDefinition
      */
     public function getArgument($name)
     {
+        $arguments = is_int($name) ? array_values($this->arguments) : $this->arguments;
+
         if (!$this->hasArgument($name)) {
             throw new \InvalidArgumentException(sprintf('The "%s" argument does not exist.', $name));
         }
-
-        $arguments = is_int($name) ? array_values($this->arguments) : $this->arguments;
 
         return $arguments[$name];
     }
@@ -166,9 +162,9 @@ class InputDefinition
     /**
      * Returns true if an InputArgument object exists by name or position.
      *
-     * @param string|int $name The InputArgument name or position
+     * @param string|integer $name The InputArgument name or position
      *
-     * @return bool true if the InputArgument object exists, false otherwise
+     * @return Boolean true if the InputArgument object exists, false otherwise
      *
      * @api
      */
@@ -182,7 +178,7 @@ class InputDefinition
     /**
      * Gets the array of InputArgument objects.
      *
-     * @return InputArgument[] An array of InputArgument objects
+     * @return array An array of InputArgument objects
      *
      * @api
      */
@@ -194,7 +190,7 @@ class InputDefinition
     /**
      * Returns the number of InputArguments.
      *
-     * @return int The number of InputArguments
+     * @return integer The number of InputArguments
      */
     public function getArgumentCount()
     {
@@ -204,7 +200,7 @@ class InputDefinition
     /**
      * Returns the number of required InputArguments.
      *
-     * @return int The number of required InputArguments
+     * @return integer The number of required InputArguments
      */
     public function getArgumentRequiredCount()
     {
@@ -229,7 +225,7 @@ class InputDefinition
     /**
      * Sets the InputOption objects.
      *
-     * @param InputOption[] $options An array of InputOption objects
+     * @param array $options An array of InputOption objects
      *
      * @api
      */
@@ -267,21 +263,13 @@ class InputDefinition
     {
         if (isset($this->options[$option->getName()]) && !$option->equals($this->options[$option->getName()])) {
             throw new \LogicException(sprintf('An option named "%s" already exists.', $option->getName()));
-        }
-
-        if ($option->getShortcut()) {
-            foreach (explode('|', $option->getShortcut()) as $shortcut) {
-                if (isset($this->shortcuts[$shortcut]) && !$option->equals($this->options[$this->shortcuts[$shortcut]])) {
-                    throw new \LogicException(sprintf('An option with shortcut "%s" already exists.', $shortcut));
-                }
-            }
+        } elseif (isset($this->shortcuts[$option->getShortcut()]) && !$option->equals($this->options[$this->shortcuts[$option->getShortcut()]])) {
+            throw new \LogicException(sprintf('An option with shortcut "%s" already exists.', $option->getShortcut()));
         }
 
         $this->options[$option->getName()] = $option;
         if ($option->getShortcut()) {
-            foreach (explode('|', $option->getShortcut()) as $shortcut) {
-                $this->shortcuts[$shortcut] = $option->getName();
-            }
+            $this->shortcuts[$option->getShortcut()] = $option->getName();
         }
     }
 
@@ -310,7 +298,7 @@ class InputDefinition
      *
      * @param string $name The InputOption name
      *
-     * @return bool true if the InputOption object exists, false otherwise
+     * @return Boolean true if the InputOption object exists, false otherwise
      *
      * @api
      */
@@ -322,7 +310,7 @@ class InputDefinition
     /**
      * Gets the array of InputOption objects.
      *
-     * @return InputOption[] An array of InputOption objects
+     * @return array An array of InputOption objects
      *
      * @api
      */
@@ -336,7 +324,7 @@ class InputDefinition
      *
      * @param string $name The InputOption shortcut
      *
-     * @return bool true if the InputOption object exists, false otherwise
+     * @return Boolean true if the InputOption object exists, false otherwise
      */
     public function hasShortcut($name)
     {
@@ -416,38 +404,128 @@ class InputDefinition
      * Returns a textual representation of the InputDefinition.
      *
      * @return string A string representing the InputDefinition
-     *
-     * @deprecated Deprecated since version 2.3, to be removed in 3.0.
      */
     public function asText()
     {
-        $descriptor = new TextDescriptor();
-        $output = new BufferedOutput(BufferedOutput::VERBOSITY_NORMAL, true);
-        $descriptor->describe($output, $this, array('raw_output' => true));
+        // find the largest option or argument name
+        $max = 0;
+        foreach ($this->getOptions() as $option) {
+            $nameLength = strlen($option->getName()) + 2;
+            if ($option->getShortcut()) {
+                $nameLength += strlen($option->getShortcut()) + 3;
+            }
 
-        return $output->fetch();
+            $max = max($max, $nameLength);
+        }
+        foreach ($this->getArguments() as $argument) {
+            $max = max($max, strlen($argument->getName()));
+        }
+        ++$max;
+
+        $text = array();
+
+        if ($this->getArguments()) {
+            $text[] = '<comment>Arguments:</comment>';
+            foreach ($this->getArguments() as $argument) {
+                if (null !== $argument->getDefault() && (!is_array($argument->getDefault()) || count($argument->getDefault()))) {
+                    $default = sprintf('<comment> (default: %s)</comment>', $this->formatDefaultValue($argument->getDefault()));
+                } else {
+                    $default = '';
+                }
+
+                $description = str_replace("\n", "\n".str_pad('', $max + 2, ' '), $argument->getDescription());
+
+                $text[] = sprintf(" <info>%-${max}s</info> %s%s", $argument->getName(), $description, $default);
+            }
+
+            $text[] = '';
+        }
+
+        if ($this->getOptions()) {
+            $text[] = '<comment>Options:</comment>';
+
+            foreach ($this->getOptions() as $option) {
+                if ($option->acceptValue() && null !== $option->getDefault() && (!is_array($option->getDefault()) || count($option->getDefault()))) {
+                    $default = sprintf('<comment> (default: %s)</comment>', $this->formatDefaultValue($option->getDefault()));
+                } else {
+                    $default = '';
+                }
+
+                $multiple = $option->isArray() ? '<comment> (multiple values allowed)</comment>' : '';
+                $description = str_replace("\n", "\n".str_pad('', $max + 2, ' '), $option->getDescription());
+
+                $optionMax = $max - strlen($option->getName()) - 2;
+                $text[] = sprintf(" <info>%s</info> %-${optionMax}s%s%s%s",
+                    '--'.$option->getName(),
+                    $option->getShortcut() ? sprintf('(-%s) ', $option->getShortcut()) : '',
+                    $description,
+                    $default,
+                    $multiple
+                );
+            }
+
+            $text[] = '';
+        }
+
+        return implode("\n", $text);
     }
 
     /**
      * Returns an XML representation of the InputDefinition.
      *
-     * @param bool $asDom Whether to return a DOM or an XML string
+     * @param Boolean $asDom Whether to return a DOM or an XML string
      *
-     * @return string|\DOMDocument An XML string representing the InputDefinition
-     *
-     * @deprecated Deprecated since version 2.3, to be removed in 3.0.
+     * @return string|DOMDocument An XML string representing the InputDefinition
      */
     public function asXml($asDom = false)
     {
-        $descriptor = new XmlDescriptor();
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
+        $dom->appendChild($definitionXML = $dom->createElement('definition'));
 
-        if ($asDom) {
-            return $descriptor->getInputDefinitionDocument($this);
+        $definitionXML->appendChild($argumentsXML = $dom->createElement('arguments'));
+        foreach ($this->getArguments() as $argument) {
+            $argumentsXML->appendChild($argumentXML = $dom->createElement('argument'));
+            $argumentXML->setAttribute('name', $argument->getName());
+            $argumentXML->setAttribute('is_required', $argument->isRequired() ? 1 : 0);
+            $argumentXML->setAttribute('is_array', $argument->isArray() ? 1 : 0);
+            $argumentXML->appendChild($descriptionXML = $dom->createElement('description'));
+            $descriptionXML->appendChild($dom->createTextNode($argument->getDescription()));
+
+            $argumentXML->appendChild($defaultsXML = $dom->createElement('defaults'));
+            $defaults = is_array($argument->getDefault()) ? $argument->getDefault() : (is_bool($argument->getDefault()) ? array(var_export($argument->getDefault(), true)) : ($argument->getDefault() ? array($argument->getDefault()) : array()));
+            foreach ($defaults as $default) {
+                $defaultsXML->appendChild($defaultXML = $dom->createElement('default'));
+                $defaultXML->appendChild($dom->createTextNode($default));
+            }
         }
 
-        $output = new BufferedOutput();
-        $descriptor->describe($output, $this);
+        $definitionXML->appendChild($optionsXML = $dom->createElement('options'));
+        foreach ($this->getOptions() as $option) {
+            $optionsXML->appendChild($optionXML = $dom->createElement('option'));
+            $optionXML->setAttribute('name', '--'.$option->getName());
+            $optionXML->setAttribute('shortcut', $option->getShortcut() ? '-'.$option->getShortcut() : '');
+            $optionXML->setAttribute('accept_value', $option->acceptValue() ? 1 : 0);
+            $optionXML->setAttribute('is_value_required', $option->isValueRequired() ? 1 : 0);
+            $optionXML->setAttribute('is_multiple', $option->isArray() ? 1 : 0);
+            $optionXML->appendChild($descriptionXML = $dom->createElement('description'));
+            $descriptionXML->appendChild($dom->createTextNode($option->getDescription()));
 
-        return $output->fetch();
+            if ($option->acceptValue()) {
+                $optionXML->appendChild($defaultsXML = $dom->createElement('defaults'));
+                $defaults = is_array($option->getDefault()) ? $option->getDefault() : (is_bool($option->getDefault()) ? array(var_export($option->getDefault(), true)) : ($option->getDefault() ? array($option->getDefault()) : array()));
+                foreach ($defaults as $default) {
+                    $defaultsXML->appendChild($defaultXML = $dom->createElement('default'));
+                    $defaultXML->appendChild($dom->createTextNode($default));
+                }
+            }
+        }
+
+        return $asDom ? $dom : $dom->saveXml();
+    }
+
+    private function formatDefaultValue($default)
+    {
+        return json_encode($default);
     }
 }

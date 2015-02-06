@@ -20,7 +20,7 @@ namespace Symfony\Component\Console\Input;
  */
 class InputOption
 {
-    const VALUE_NONE = 1;
+    const VALUE_NONE     = 1;
     const VALUE_REQUIRED = 2;
     const VALUE_OPTIONAL = 4;
     const VALUE_IS_ARRAY = 8;
@@ -34,11 +34,11 @@ class InputOption
     /**
      * Constructor.
      *
-     * @param string       $name        The option name
-     * @param string|array $shortcut    The shortcuts, can be null, a string of shortcuts delimited by | or an array of shortcuts
-     * @param int          $mode        The option mode: One of the VALUE_* constants
-     * @param string       $description A description text
-     * @param mixed        $default     The default value (must be null for self::VALUE_REQUIRED or self::VALUE_NONE)
+     * @param string  $name        The option name
+     * @param string  $shortcut    The shortcut (can be null)
+     * @param integer $mode        The option mode: One of the VALUE_* constants
+     * @param string  $description A description text
+     * @param mixed   $default     The default value (must be null for self::VALUE_REQUIRED or self::VALUE_NONE)
      *
      * @throws \InvalidArgumentException If option mode is invalid or incompatible
      *
@@ -59,12 +59,9 @@ class InputOption
         }
 
         if (null !== $shortcut) {
-            if (is_array($shortcut)) {
-                $shortcut = implode('|', $shortcut);
+            if ('-' === $shortcut[0]) {
+                $shortcut = substr($shortcut, 1);
             }
-            $shortcuts = preg_split('{(\|)-?}', ltrim($shortcut, '-'));
-            $shortcuts = array_filter($shortcuts);
-            $shortcut = implode('|', $shortcuts);
 
             if (empty($shortcut)) {
                 throw new \InvalidArgumentException('An option shortcut cannot be empty.');
@@ -77,9 +74,9 @@ class InputOption
             throw new \InvalidArgumentException(sprintf('Option mode "%s" is not valid.', $mode));
         }
 
-        $this->name = $name;
-        $this->shortcut = $shortcut;
-        $this->mode = $mode;
+        $this->name        = $name;
+        $this->shortcut    = $shortcut;
+        $this->mode        = $mode;
         $this->description = $description;
 
         if ($this->isArray() && !$this->acceptValue()) {
@@ -112,7 +109,7 @@ class InputOption
     /**
      * Returns true if the option accepts a value.
      *
-     * @return bool true if value mode is not self::VALUE_NONE, false otherwise
+     * @return Boolean true if value mode is not self::VALUE_NONE, false otherwise
      */
     public function acceptValue()
     {
@@ -122,7 +119,7 @@ class InputOption
     /**
      * Returns true if the option requires a value.
      *
-     * @return bool true if value mode is self::VALUE_REQUIRED, false otherwise
+     * @return Boolean true if value mode is self::VALUE_REQUIRED, false otherwise
      */
     public function isValueRequired()
     {
@@ -132,7 +129,7 @@ class InputOption
     /**
      * Returns true if the option takes an optional value.
      *
-     * @return bool true if value mode is self::VALUE_OPTIONAL, false otherwise
+     * @return Boolean true if value mode is self::VALUE_OPTIONAL, false otherwise
      */
     public function isValueOptional()
     {
@@ -142,7 +139,7 @@ class InputOption
     /**
      * Returns true if the option can take multiple values.
      *
-     * @return bool true if mode is self::VALUE_IS_ARRAY, false otherwise
+     * @return Boolean true if mode is self::VALUE_IS_ARRAY, false otherwise
      */
     public function isArray()
     {
@@ -159,7 +156,7 @@ class InputOption
     public function setDefault($default = null)
     {
         if (self::VALUE_NONE === (self::VALUE_NONE & $this->mode) && null !== $default) {
-            throw new \LogicException('Cannot set a default value when using InputOption::VALUE_NONE mode.');
+            throw new \LogicException('Cannot set a default value when using Option::VALUE_NONE mode.');
         }
 
         if ($this->isArray()) {
@@ -194,11 +191,10 @@ class InputOption
     }
 
     /**
-     * Checks whether the given option equals this one.
+     * Checks whether the given option equals this one
      *
      * @param InputOption $option option to compare
-     *
-     * @return bool
+     * @return Boolean
      */
     public function equals(InputOption $option)
     {

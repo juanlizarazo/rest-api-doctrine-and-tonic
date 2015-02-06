@@ -17,12 +17,10 @@ use Symfony\Component\Console\Formatter\OutputFormatter;
 /**
  * Base class for output classes.
  *
- * There are five levels of verbosity:
+ * There are three levels of verbosity:
  *
- *  * normal: no option passed (normal output)
- *  * verbose: -v (more output)
- *  * very verbose: -vv (highly extended output)
- *  * debug: -vvv (all debug output)
+ *  * normal: no option passed (normal output - information)
+ *  * verbose: -v (more output - debug)
  *  * quiet: -q (no output)
  *
  * @author Fabien Potencier <fabien@symfony.com>
@@ -37,21 +35,25 @@ abstract class Output implements OutputInterface
     /**
      * Constructor.
      *
-     * @param int                           $verbosity The verbosity level (one of the VERBOSITY constants in OutputInterface)
-     * @param bool                          $decorated Whether to decorate messages
-     * @param OutputFormatterInterface|null $formatter Output formatter instance (null to use default OutputFormatter)
+     * @param integer                  $verbosity The verbosity level (self::VERBOSITY_QUIET, self::VERBOSITY_NORMAL, self::VERBOSITY_VERBOSE)
+     * @param Boolean                  $decorated Whether to decorate messages or not (null for auto-guessing)
+     * @param OutputFormatterInterface $formatter Output formatter instance
      *
      * @api
      */
-    public function __construct($verbosity = self::VERBOSITY_NORMAL, $decorated = false, OutputFormatterInterface $formatter = null)
+    public function __construct($verbosity = self::VERBOSITY_NORMAL, $decorated = null, OutputFormatterInterface $formatter = null)
     {
         $this->verbosity = null === $verbosity ? self::VERBOSITY_NORMAL : $verbosity;
-        $this->formatter = $formatter ?: new OutputFormatter();
-        $this->formatter->setDecorated($decorated);
+        $this->formatter = null === $formatter ? new OutputFormatter() : $formatter;
+        $this->formatter->setDecorated((Boolean) $decorated);
     }
 
     /**
-     * {@inheritdoc}
+     * Sets output formatter.
+     *
+     * @param OutputFormatterInterface $formatter
+     *
+     * @api
      */
     public function setFormatter(OutputFormatterInterface $formatter)
     {
@@ -59,7 +61,11 @@ abstract class Output implements OutputInterface
     }
 
     /**
-     * {@inheritdoc}
+     * Returns current output formatter instance.
+     *
+     * @return  OutputFormatterInterface
+     *
+     * @api
      */
     public function getFormatter()
     {
@@ -67,15 +73,23 @@ abstract class Output implements OutputInterface
     }
 
     /**
-     * {@inheritdoc}
+     * Sets the decorated flag.
+     *
+     * @param Boolean $decorated Whether to decorate the messages or not
+     *
+     * @api
      */
     public function setDecorated($decorated)
     {
-        $this->formatter->setDecorated($decorated);
+        $this->formatter->setDecorated((Boolean) $decorated);
     }
 
     /**
-     * {@inheritdoc}
+     * Gets the decorated flag.
+     *
+     * @return Boolean true if the output will decorate messages, false otherwise
+     *
+     * @api
      */
     public function isDecorated()
     {
@@ -83,7 +97,11 @@ abstract class Output implements OutputInterface
     }
 
     /**
-     * {@inheritdoc}
+     * Sets the verbosity of the output.
+     *
+     * @param integer $level The level of verbosity
+     *
+     * @api
      */
     public function setVerbosity($level)
     {
@@ -91,45 +109,42 @@ abstract class Output implements OutputInterface
     }
 
     /**
-     * {@inheritdoc}
+     * Gets the current verbosity of the output.
+     *
+     * @return integer The current level of verbosity
+     *
+     * @api
      */
     public function getVerbosity()
     {
         return $this->verbosity;
     }
 
-    public function isQuiet()
-    {
-        return self::VERBOSITY_QUIET === $this->verbosity;
-    }
-
-    public function isVerbose()
-    {
-        return self::VERBOSITY_VERBOSE <= $this->verbosity;
-    }
-
-    public function isVeryVerbose()
-    {
-        return self::VERBOSITY_VERY_VERBOSE <= $this->verbosity;
-    }
-
-    public function isDebug()
-    {
-        return self::VERBOSITY_DEBUG <= $this->verbosity;
-    }
-
     /**
-     * {@inheritdoc}
+     * Writes a message to the output and adds a newline at the end.
+     *
+     * @param string|array $messages The message as an array of lines of a single string
+     * @param integer      $type     The type of output
+     *
+     * @api
      */
-    public function writeln($messages, $type = self::OUTPUT_NORMAL)
+    public function writeln($messages, $type = 0)
     {
         $this->write($messages, true, $type);
     }
 
     /**
-     * {@inheritdoc}
+     * Writes a message to the output.
+     *
+     * @param string|array $messages The message as an array of lines of a single string
+     * @param Boolean      $newline  Whether to add a newline or not
+     * @param integer      $type     The type of output
+     *
+     * @throws \InvalidArgumentException When unknown output type is given
+     *
+     * @api
      */
-    public function write($messages, $newline = false, $type = self::OUTPUT_NORMAL)
+    public function write($messages, $newline = false, $type = 0)
     {
         if (self::VERBOSITY_QUIET === $this->verbosity) {
             return;
@@ -158,8 +173,8 @@ abstract class Output implements OutputInterface
     /**
      * Writes a message to the output.
      *
-     * @param string $message A message to write to the output
-     * @param bool   $newline Whether to add a newline or not
+     * @param string  $message A message to write to the output
+     * @param Boolean $newline Whether to add a newline or not
      */
     abstract protected function doWrite($message, $newline);
 }

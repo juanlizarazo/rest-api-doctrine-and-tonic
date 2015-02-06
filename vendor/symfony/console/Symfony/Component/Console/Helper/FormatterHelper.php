@@ -39,7 +39,7 @@ class FormatterHelper extends Helper
      *
      * @param string|array $messages The message to write in the block
      * @param string       $style    The style to apply to the whole block
-     * @param bool         $large    Whether to return a large block
+     * @param Boolean      $large    Whether to return a large block
      *
      * @return string The formatter message
      */
@@ -71,7 +71,29 @@ class FormatterHelper extends Helper
     }
 
     /**
-     * {@inheritdoc}
+     * Returns the length of a string, using mb_strlen if it is available.
+     *
+     * @param string $string The string to check its length
+     *
+     * @return integer The length of the string
+     */
+    private function strlen($string)
+    {
+        if (!function_exists('mb_strlen')) {
+            return strlen($string);
+        }
+
+        if (false === $encoding = mb_detect_encoding($string)) {
+            return strlen($string);
+        }
+
+        return mb_strlen($string, $encoding);
+    }
+
+    /**
+     * Returns the helper's canonical name.
+     *
+     * @return string The canonical name of the helper
      */
     public function getName()
     {

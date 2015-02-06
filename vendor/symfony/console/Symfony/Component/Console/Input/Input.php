@@ -24,12 +24,9 @@ namespace Symfony\Component\Console\Input;
  */
 abstract class Input implements InputInterface
 {
-    /**
-     * @var InputDefinition
-     */
     protected $definition;
-    protected $options = array();
-    protected $arguments = array();
+    protected $options;
+    protected $arguments;
     protected $interactive = true;
 
     /**
@@ -81,7 +78,7 @@ abstract class Input implements InputInterface
     /**
      * Checks if the input is interactive.
      *
-     * @return bool Returns true if the input is interactive
+     * @return Boolean Returns true if the input is interactive
      */
     public function isInteractive()
     {
@@ -91,11 +88,11 @@ abstract class Input implements InputInterface
     /**
      * Sets the input interactivity.
      *
-     * @param bool $interactive If the input should be interactive
+     * @param Boolean $interactive If the input should be interactive
      */
     public function setInteractive($interactive)
     {
-        $this->interactive = (bool) $interactive;
+        $this->interactive = (Boolean) $interactive;
     }
 
     /**
@@ -146,9 +143,9 @@ abstract class Input implements InputInterface
     /**
      * Returns true if an InputArgument object exists by name or position.
      *
-     * @param string|int $name The InputArgument name or position
+     * @param string|integer $name The InputArgument name or position
      *
-     * @return bool true if the InputArgument object exists, false otherwise
+     * @return Boolean true if the InputArgument object exists, false otherwise
      */
     public function hasArgument($name)
     {
@@ -186,8 +183,8 @@ abstract class Input implements InputInterface
     /**
      * Sets an option value by name.
      *
-     * @param string      $name  The option name
-     * @param string|bool $value The option value
+     * @param string $name  The option name
+     * @param string $value The option value
      *
      * @throws \InvalidArgumentException When option given doesn't exist
      */
@@ -205,22 +202,10 @@ abstract class Input implements InputInterface
      *
      * @param string $name The InputOption name
      *
-     * @return bool true if the InputOption object exists, false otherwise
+     * @return Boolean true if the InputOption object exists, false otherwise
      */
     public function hasOption($name)
     {
         return $this->definition->hasOption($name);
-    }
-
-    /**
-     * Escapes a token through escapeshellarg if it contains unsafe chars.
-     *
-     * @param string $token
-     *
-     * @return string
-     */
-    public function escapeToken($token)
-    {
-        return preg_match('{^[\w-]+$}', $token) ? $token : escapeshellarg($token);
     }
 }

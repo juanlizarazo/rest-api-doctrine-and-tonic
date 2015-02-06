@@ -35,10 +35,11 @@ class StreamOutput extends Output
     /**
      * Constructor.
      *
-     * @param mixed                         $stream    A stream resource
-     * @param int                           $verbosity The verbosity level (one of the VERBOSITY constants in OutputInterface)
-     * @param bool|null                     $decorated Whether to decorate messages (null for auto-guessing)
-     * @param OutputFormatterInterface|null $formatter Output formatter instance (null to use default OutputFormatter)
+     * @param mixed   $stream    A stream resource
+     * @param integer $verbosity The verbosity level (self::VERBOSITY_QUIET, self::VERBOSITY_NORMAL,
+     *                                   self::VERBOSITY_VERBOSE)
+     * @param Boolean         $decorated Whether to decorate messages or not (null for auto-guessing)
+     * @param OutputFormatter $formatter Output formatter instance
      *
      * @throws \InvalidArgumentException When first argument is not a real stream
      *
@@ -53,7 +54,7 @@ class StreamOutput extends Output
         $this->stream = $stream;
 
         if (null === $decorated) {
-            $decorated = $this->hasColorSupport();
+            $decorated = $this->hasColorSupport($decorated);
         }
 
         parent::__construct($verbosity, $decorated, $formatter);
@@ -70,13 +71,20 @@ class StreamOutput extends Output
     }
 
     /**
-     * {@inheritdoc}
+     * Writes a message to the output.
+     *
+     * @param string  $message A message to write to the output
+     * @param Boolean $newline Whether to add a newline or not
+     *
+     * @throws \RuntimeException When unable to write output (should never happen)
      */
     protected function doWrite($message, $newline)
     {
         if (false === @fwrite($this->stream, $message.($newline ? PHP_EOL : ''))) {
+            // @codeCoverageIgnoreStart
             // should never happen
             throw new \RuntimeException('Unable to write output.');
+            // @codeCoverageIgnoreEnd
         }
 
         fflush($this->stream);
@@ -87,17 +95,19 @@ class StreamOutput extends Output
      *
      * Colorization is disabled if not supported by the stream:
      *
-     *  -  Windows without Ansicon and ConEmu
+     *  -  windows without ansicon
      *  -  non tty consoles
      *
-     * @return bool true if the stream supports colorization, false otherwise
+     * @return Boolean true if the stream supports colorization, false otherwise
      */
     protected function hasColorSupport()
     {
+        // @codeCoverageIgnoreStart
         if (DIRECTORY_SEPARATOR == '\\') {
-            return false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI');
+            return false !== getenv('ANSICON');
         }
 
         return function_exists('posix_isatty') && @posix_isatty($this->stream);
+        // @codeCoverageIgnoreEnd
     }
 }

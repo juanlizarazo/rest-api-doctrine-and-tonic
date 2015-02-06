@@ -7,7 +7,8 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Tonic' => array($vendorDir . '/peej/tonic/src'),
-    'Symfony\\Component\\Console\\' => array($vendorDir . '/symfony/console'),
+    'Symfony\\Component\\Yaml' => array($vendorDir . '/symfony/yaml'),
+    'Symfony\\Component\\Console' => array($vendorDir . '/symfony/console'),
     'Doctrine\\ORM\\' => array($vendorDir . '/doctrine/orm/lib'),
     'Doctrine\\DBAL\\Migrations' => array($vendorDir . '/doctrine/migrations/lib'),
     'Doctrine\\DBAL\\' => array($vendorDir . '/doctrine/dbal/lib'),

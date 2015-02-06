@@ -2,6 +2,8 @@
     "require": {
         "peej/tonic": "3.*",
         "doctrine/orm": "*",
-        "doctrine/migrations": "1.0.*@dev"
+        "doctrine/migrations": "1.0.*@dev",
+        "symfony/console": "2.1.2",
+        "symfony/yaml": "2.1.2"
     }
 }
